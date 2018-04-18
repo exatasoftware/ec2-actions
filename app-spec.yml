@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion : '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS Lambda function for EC2 instance start.
+Description: AWS Lambda function for EC2 instance start/stop.
 
 Metadata: 
-  Name: ec2-instance-start-python3
+  Name: ec2-instance-start-stop-python3
 
 Parameters:
   InstanceID:
@@ -18,8 +18,34 @@ Resources:
   InstanceStop:
     Type: AWS::Serverless::Function
     Properties:
+      Description: EC2 Stop Function
+      Handler: lambda_function.stop
+      Runtime: python3.6
+      MemorySize: 128
+      Timeout: 300
+      Policies:
+        - Version: 2018-04-18
+          Statement:
+            - Effect: Allow
+              Action:
+                - ec2:Stop*
+                - ec2:DescribeInstances*
+              Resource: "*"
+      CodeUri: app-ec2-actions.zip
+      Environment:
+        Variables:
+          INSTANCE_ID: !Ref InstanceID
+      Events:
+        CheckInstanceScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref CheckSchedule
+
+  InstanceStart:
+    Type: AWS::Serverless::Function
+    Properties:
       Description: EC2 Start Function
-      Handler: lambda_function.handler
+      Handler: lambda_function.start
       Runtime: python3.6
       MemorySize: 128
       Timeout: 300
@@ -31,7 +57,7 @@ Resources:
                 - ec2:Start*
                 - ec2:DescribeInstances*
               Resource: "*"
-      CodeUri: app_ec2start.zip
+      CodeUri: app-ec2-actions.zip
       Environment:
         Variables:
           INSTANCE_ID: !Ref InstanceID
