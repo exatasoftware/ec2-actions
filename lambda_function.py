@@ -1,4 +1,3 @@
-"""This is sample program."""
 import logging
 import os
 import sys
@@ -48,6 +47,34 @@ def ec2stop():
     else:
         LOGGER.info('Not Running InstanceID： ' + INSTANCE_ID)
 
+def ec2start():
+    """
+    EC2 instance start.
+    """
+    response = EC2CLIENT.describe_instance_status(InstanceIds=[INSTANCE_ID], IncludeAllInstances=True)
+    instance_status = response['InstanceStatuses'][0]['InstanceStatus']['Status']
+    system_status = response['InstanceStatuses'][0]['SystemStatus']['Status']
+
+    if EC2INSTANCE.state['Name'] == 'running' and instance_status == 'ok' and system_status == 'ok':
+        LOGGER.info('Aborts. Istance is running.')
+        return
+    elif EC2INSTANCE.state['Name'] == 'stopped':
+        EC2INSTANCE.start()
+        LOGGER.info('Start InstanceID: ' + INSTANCE_ID)
+        EC2CLIENT.get_waiter('instance_running').wait(
+            InstanceIds=[
+                INSTANCE_ID
+            ],
+            WaiterConfig={
+                'Delay': 5,
+                'MaxAttempts': 30
+            }
+        )
+        LOGGER.info("Completed!")
+        return
+    else:
+        LOGGER.info('Not started InstanceID: ' + INSTANCE_ID)
+
 def handler(event, context):
     """
     main function
@@ -56,3 +83,11 @@ def handler(event, context):
         ec2stop()
     except Exception as error:
         LOGGER.exception(error)
+
+
+if __name__ == '__main__':
+    try:
+        ec2start() 
+    except Exception as error:
+        LOGGER.exception(error)
+
